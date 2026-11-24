@@ -137,6 +137,8 @@ declare namespace NodeJS {
      */
     NEXT_PUBLIC_PROCAPTCHA_SITE_KEY?: string;
     NEXT_PRIVATE_PROCAPTCHA_SECRET_KEY?: string;
+    NEXT_PUBLIC_PROCAPTCHA_SCRIPT_URL?: string;
+    NEXT_PRIVATE_PROCAPTCHA_VERIFY_URL?: string;
 
     /**
      * Google Vertex AI environment variables
