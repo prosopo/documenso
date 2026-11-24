@@ -23,9 +23,8 @@ export const UnifiedSettingsSidebar = ({ groups, currentOrgUrl, currentTeamUrl }
     <aside className="flex w-full flex-col" data-testid="unified-settings-sidebar">
       {currentOrgUrl && (
         <div className="p-4">
-          <SidebarGroup
+          <SettingsSidebarGroup
             heading={<Trans>Organisation Settings</Trans>}
-            activeBgClassName="bg-[#F1FBEA] text-gray-900 hover:bg-[#F1FBEA] hover:text-gray-900 dark:bg-[#1C2515] dark:text-[#F1FBEA] dark:hover:bg-[#1C2515] dark:hover:text-[#F1FBEA]"
             switcher={<SettingsOrgSwitcher currentOrgUrl={currentOrgUrl} />}
             items={groups.organisation?.items ?? []}
             scope="organisation"
@@ -46,9 +45,8 @@ export const UnifiedSettingsSidebar = ({ groups, currentOrgUrl, currentTeamUrl }
 
       {groups.team && currentOrgUrl && (
         <div className="border-t p-4">
-          <SidebarGroup
+          <SettingsSidebarGroup
             heading={<Trans>Team Settings</Trans>}
-            activeBgClassName="bg-[#F1FBEA] text-gray-900 hover:bg-[#F1FBEA] hover:text-gray-900 dark:bg-[#1C2515] dark:text-[#F1FBEA] dark:hover:bg-[#1C2515] dark:hover:text-[#F1FBEA]"
             switcher={<SettingsTeamSwitcher currentOrgUrl={currentOrgUrl} currentTeamUrl={currentTeamUrl} />}
             items={groups.team.items}
             scope={groups.team.scope}
@@ -57,9 +55,8 @@ export const UnifiedSettingsSidebar = ({ groups, currentOrgUrl, currentTeamUrl }
       )}
 
       <div className={cn('p-4', currentOrgUrl && 'border-t')}>
-        <SidebarGroup
+        <SettingsSidebarGroup
           heading={<Trans>Account Settings</Trans>}
-          activeBgClassName="bg-[#F1FBEA] text-gray-900 hover:bg-[#F1FBEA] hover:text-gray-900 dark:bg-[#1C2515] dark:text-[#F1FBEA] dark:hover:bg-[#1C2515] dark:hover:text-[#F1FBEA]"
           items={groups.account.items}
           scope={groups.account.scope}
         />
@@ -68,16 +65,21 @@ export const UnifiedSettingsSidebar = ({ groups, currentOrgUrl, currentTeamUrl }
   );
 };
 
-type SidebarGroupProps = {
+export type SettingsSidebarScope = SettingsNavScope | 'admin';
+
+export type SettingsSidebarGroupProps = {
   className?: string;
   headingClassName?: string;
   heading: ReactNode;
-  activeBgClassName: string;
+  activeBgClassName?: string;
   switcher?: ReactNode;
   items: SettingsNavItem[];
-  scope: SettingsNavScope;
+  scope: SettingsSidebarScope;
   emptyState?: ReactNode;
 };
+
+const ACTIVE_NAV_ITEM_CLASS_NAME =
+  'bg-[#F1FBEA] text-gray-900 hover:bg-[#F1FBEA] hover:text-gray-900 dark:bg-[#1C2515] dark:text-[#F1FBEA] dark:hover:bg-[#1C2515] dark:hover:text-[#F1FBEA]';
 
 type GroupedNavEntry =
   | { kind: 'flat'; item: SettingsNavItem }
@@ -110,16 +112,16 @@ const groupNavEntries = (items: SettingsNavItem[]): GroupedNavEntry[] => {
   return entries;
 };
 
-const SidebarGroup = ({
+export const SettingsSidebarGroup = ({
   className,
   headingClassName,
   heading,
-  activeBgClassName,
+  activeBgClassName = ACTIVE_NAV_ITEM_CLASS_NAME,
   switcher,
   items,
   scope,
   emptyState,
-}: SidebarGroupProps) => {
+}: SettingsSidebarGroupProps) => {
   const grouped = groupNavEntries(items);
 
   return (
@@ -164,7 +166,7 @@ const SidebarGroup = ({
 type FlatNavItemProps = {
   item: SettingsNavItem;
   activeBgClassName: string;
-  scope: SettingsNavScope;
+  scope: SettingsSidebarScope;
 };
 
 const FlatNavItem = ({ item, activeBgClassName, scope }: FlatNavItemProps) => {
@@ -198,7 +200,7 @@ type CollapsibleNavSectionProps = {
   parent: SettingsNavItem;
   childItems: SettingsNavItem[];
   activeBgClassName: string;
-  scope: SettingsNavScope;
+  scope: SettingsSidebarScope;
 };
 
 const CollapsibleNavSection = ({ parent, childItems, activeBgClassName, scope }: CollapsibleNavSectionProps) => {

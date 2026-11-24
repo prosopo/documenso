@@ -14,8 +14,8 @@ import { Trans } from '@lingui/react/macro';
 import { Loader } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-
 import { DocumentStatus } from '~/components/general/document/document-status';
+import { SettingsHeader } from '~/components/general/settings-header';
 
 export default function AdminDocumentsPage() {
   const { _, i18n } = useLingui();
@@ -129,11 +129,13 @@ export default function AdminDocumentsPage() {
 
   return (
     <div>
-      <h2 className="font-semibold text-4xl">
-        <Trans>Manage documents</Trans>
-      </h2>
+      <SettingsHeader
+        hideDivider
+        title={<Trans>Manage documents</Trans>}
+        subtitle={<Trans>Search and manage all documents</Trans>}
+      />
 
-      <div className="mt-8">
+      <div className="mt-4">
         <div>
           <Input
             type="search"

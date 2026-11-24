@@ -24,12 +24,12 @@ import {
   UserSquare2,
   Users,
 } from 'lucide-react';
-
 import { AdminLicenseCard } from '~/components/general/admin-license-card';
 import { MonthlyActiveUsersChart } from '~/components/general/admin-monthly-active-user-charts';
 import { AdminStatsSignerConversionChart } from '~/components/general/admin-stats-signer-conversion-chart';
 import { AdminStatsUsersWithDocumentsChart } from '~/components/general/admin-stats-users-with-documents';
 import { CardMetric } from '~/components/general/metric-card';
+import { SettingsHeader } from '~/components/general/settings-header';
 
 import { version } from '../../../../package.json';
 import type { Route } from './+types/stats';
@@ -83,11 +83,13 @@ export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <div>
-      <h2 className="font-semibold text-4xl">
-        <Trans>Instance Stats</Trans>
-      </h2>
+      <SettingsHeader
+        hideDivider
+        title={<Trans>Instance Stats</Trans>}
+        subtitle={<Trans>Users, documents and signing activity across this instance</Trans>}
+      />
 
-      <div className="mt-8 grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CardMetric icon={Users} title={_(msg`Total Users`)} value={usersCount} />
         <CardMetric icon={File} title={_(msg`Total Documents`)} value={docStats.ALL} />
         <CardMetric icon={UserPlus} title={_(msg`Active Subscriptions`)} value={organisationsWithSubscriptionsCount} />
@@ -101,7 +103,7 @@ export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
 
       <div className="mt-16 gap-8">
         <div>
-          <h3 className="font-semibold text-3xl">
+          <h3 className="font-semibold text-lg">
             <Trans>Document metrics</Trans>
           </h3>
 
@@ -113,7 +115,7 @@ export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
         </div>
 
         <div>
-          <h3 className="font-semibold text-3xl">
+          <h3 className="font-semibold text-lg">
             <Trans>Recipients metrics</Trans>
           </h3>
 
@@ -127,7 +129,7 @@ export default function AdminStatsPage({ loaderData }: Route.ComponentProps) {
       </div>
 
       <div className="mt-16">
-        <h3 className="font-semibold text-3xl">
+        <h3 className="font-semibold text-lg">
           <Trans>Charts</Trans>
         </h3>
         <div className="mt-5 grid grid-cols-2 gap-8">

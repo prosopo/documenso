@@ -1,6 +1,15 @@
-import type { SettingsNavGroups, SettingsNavScope } from '@documenso/lib/utils/settings-nav';
+import type { SettingsNavGroups, SettingsNavItem, SettingsNavScope } from '@documenso/lib/utils/settings-nav';
 import { cn } from '@documenso/ui/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@documenso/ui/primitives/select';
+import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
@@ -25,8 +34,6 @@ export const UnifiedSettingsSidebarMobile = ({
   currentOrgUrl,
   currentTeamUrl,
 }: UnifiedSettingsSidebarMobileProps) => {
-  const { _ } = useLingui();
-  const { pathname } = useLocation();
   const navigate = useNavigate();
 
   const visibleScopes = useMemo<MobileScope[]>(() => {
@@ -46,28 +53,6 @@ export const UnifiedSettingsSidebarMobile = ({
   const activeGroup =
     (activeScope === 'organisation' ? groups.organisation : activeScope === 'team' ? groups.team : null) ??
     groups.account;
-
-  const selectableItems = useMemo(() => activeGroup.items.filter((item) => !item.isSubNavParent), [activeGroup.items]);
-
-  // The select matches on exact value, but plenty of settings pages are sub-routes of a
-  // nav item (`/settings/security/passkeys`, `/t/x/settings/webhooks/:id`, …). Resolving
-  // to the longest matching item path keeps the trigger populated on those pages instead
-  // of rendering an empty box — mirrors the desktop sidebar's prefix highlighting.
-  const selectedPath = useMemo(() => {
-    let bestMatch: string | undefined;
-
-    for (const item of selectableItems) {
-      if (pathname !== item.path && !pathname.startsWith(`${item.path}/`)) {
-        continue;
-      }
-
-      if (!bestMatch || item.path.length > bestMatch.length) {
-        bestMatch = item.path;
-      }
-    }
-
-    return bestMatch;
-  }, [selectableItems, pathname]);
 
   const handleScopeChange = (scope: MobileScope) => {
     if (scope === activeScope) {
@@ -139,27 +124,88 @@ export const UnifiedSettingsSidebarMobile = ({
       )}
 
       <div className="px-4">
-        <div className="mb-1 font-bold text-[10px] text-muted-foreground uppercase tracking-wide">
-          <Trans>Jump to</Trans>
-        </div>
-        <Select
-          value={selectedPath}
-          onValueChange={(value) => {
-            void navigate(value);
-          }}
-        >
-          <SelectTrigger data-testid="unified-settings-mobile-section-trigger">
-            <SelectValue placeholder={_(msg`Select a section`)} />
-          </SelectTrigger>
-          <SelectContent>
-            {selectableItems.map((item) => (
-              <SelectItem key={item.path} value={item.path}>
-                {item.isSubNav ? `${_(msg`Preferences`)} › ${_(item.label)}` : _(item.label)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SettingsNavJumpSelect groups={[{ items: activeGroup.items }]} />
       </div>
     </div>
+  );
+};
+
+export type SettingsNavJumpSelectGroup = {
+  /**
+   * Rendered as a heading above the group's items. Omit for a single, unlabelled group.
+   */
+  label?: MessageDescriptor;
+  items: SettingsNavItem[];
+};
+
+export type SettingsNavJumpSelectProps = {
+  groups: SettingsNavJumpSelectGroup[];
+};
+
+export const SettingsNavJumpSelect = ({ groups }: SettingsNavJumpSelectProps) => {
+  const { _ } = useLingui();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  const selectableGroups = useMemo(
+    () => groups.map((group) => ({ ...group, items: group.items.filter((item) => !item.isSubNavParent) })),
+    [groups],
+  );
+
+  const selectableItems = useMemo(() => selectableGroups.flatMap((group) => group.items), [selectableGroups]);
+
+  // The select matches on exact value, but plenty of settings pages are sub-routes of a
+  // nav item (`/settings/security/passkeys`, `/t/x/settings/webhooks/:id`, …). Resolving
+  // to the longest matching item path keeps the trigger populated on those pages instead
+  // of rendering an empty box — mirrors the desktop sidebar's prefix highlighting.
+  const selectedPath = useMemo(() => {
+    let bestMatch: string | undefined;
+
+    for (const item of selectableItems) {
+      if (pathname !== item.path && !pathname.startsWith(`${item.path}/`)) {
+        continue;
+      }
+
+      if (!bestMatch || item.path.length > bestMatch.length) {
+        bestMatch = item.path;
+      }
+    }
+
+    return bestMatch;
+  }, [selectableItems, pathname]);
+
+  return (
+    <>
+      <div className="mb-1 font-bold text-[10px] text-muted-foreground uppercase tracking-wide">
+        <Trans>Jump to</Trans>
+      </div>
+      <Select
+        value={selectedPath}
+        onValueChange={(value) => {
+          void navigate(value);
+        }}
+      >
+        <SelectTrigger data-testid="unified-settings-mobile-section-trigger">
+          <SelectValue placeholder={_(msg`Select a section`)} />
+        </SelectTrigger>
+        <SelectContent>
+          {selectableGroups.map((group, index) => (
+            <SelectGroup key={group.label?.id ?? index}>
+              {group.label && (
+                <SelectLabel className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {_(group.label)}
+                </SelectLabel>
+              )}
+
+              {group.items.map((item) => (
+                <SelectItem key={item.path} value={item.path}>
+                  {item.isSubNav ? `${_(msg`Preferences`)} › ${_(item.label)}` : _(item.label)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
   );
 };
