@@ -3,7 +3,8 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { logger } from '../../utils/logger';
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-const PROCAPTCHA_VERIFY_URL = 'https://api.prosopo.io/siteverify';
+const DEFAULT_PROCAPTCHA_VERIFY_URL = 'https://api.prosopo.io/siteverify';
+const VERIFY_TIMEOUT_MS = 10_000;
 
 type TurnstileVerifyResponse = {
   success: boolean;
@@ -29,11 +30,12 @@ type CaptchaVerifier = {
   parse: (response: Response) => Promise<CaptchaVerifyResult>;
 };
 
-const createProcaptchaVerifier = (secretKey: string): CaptchaVerifier => ({
+const createProcaptchaVerifier = (secretKey: string, verifyUrl: string): CaptchaVerifier => ({
   provider: 'procaptcha',
   request: async (token, ipAddress) =>
-    await fetch(PROCAPTCHA_VERIFY_URL, {
+    await fetch(verifyUrl, {
       method: 'POST',
+      signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -67,6 +69,7 @@ const createTurnstileVerifier = (secretKey: string): CaptchaVerifier => ({
 
     return await fetch(TURNSTILE_VERIFY_URL, {
       method: 'POST',
+      signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -88,7 +91,10 @@ const getCaptchaVerifier = (): CaptchaVerifier | null => {
   const procaptchaSecretKey = process.env.NEXT_PRIVATE_PROCAPTCHA_SECRET_KEY;
 
   if (procaptchaSecretKey) {
-    return createProcaptchaVerifier(procaptchaSecretKey);
+    return createProcaptchaVerifier(
+      procaptchaSecretKey,
+      process.env.NEXT_PRIVATE_PROCAPTCHA_VERIFY_URL || DEFAULT_PROCAPTCHA_VERIFY_URL,
+    );
   }
 
   const turnstileSecretKey = process.env.NEXT_PRIVATE_TURNSTILE_SECRET_KEY;

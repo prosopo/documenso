@@ -21,6 +21,7 @@ describe('verifyCaptchaToken', () => {
     vi.stubGlobal('fetch', fetchMock);
     vi.stubEnv('NEXT_PRIVATE_PROCAPTCHA_SECRET_KEY', '');
     vi.stubEnv('NEXT_PRIVATE_TURNSTILE_SECRET_KEY', '');
+    vi.stubEnv('NEXT_PRIVATE_PROCAPTCHA_VERIFY_URL', '');
   });
 
   afterEach(() => {
@@ -76,6 +77,29 @@ describe('verifyCaptchaToken', () => {
       await expectInvalidCaptcha(verifyCaptchaToken({ token: undefined }));
 
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('posts to a self-hosted provider when a verify URL is configured', async () => {
+      vi.stubEnv('NEXT_PRIVATE_PROCAPTCHA_VERIFY_URL', 'https://captcha.example.com/siteverify');
+      fetchMock.mockResolvedValue(jsonResponse({ status: 'ok', verified: true }));
+
+      await verifyCaptchaToken({ token: 'token' });
+
+      expect(fetchMock.mock.calls[0][0]).toBe('https://captcha.example.com/siteverify');
+    });
+
+    it('bounds the siteverify call with a timeout', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ status: 'ok', verified: true }));
+
+      await verifyCaptchaToken({ token: 'token' });
+
+      expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('rejects when siteverify times out', async () => {
+      fetchMock.mockRejectedValue(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+
+      await expectInvalidCaptcha(verifyCaptchaToken({ token: 'token' }));
     });
 
     it('takes precedence over Turnstile when both are configured', async () => {

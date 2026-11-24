@@ -8,7 +8,7 @@ import { Theme, useTheme } from 'remix-themes';
 
 import { useCspNonce } from '~/utils/nonce';
 
-const PROCAPTCHA_SCRIPT_URL = 'https://js.prosopo.io/js/procaptcha.bundle.js';
+const DEFAULT_PROCAPTCHA_SCRIPT_URL = 'https://js.prosopo.io/js/procaptcha.bundle.js';
 const PROCAPTCHA_SCRIPT_ID = 'procaptcha-script';
 
 export type CaptchaInstance = {
@@ -63,7 +63,7 @@ const loadProcaptcha = (): Promise<ProcaptchaApi> => {
     const script = document.createElement('script');
 
     script.id = PROCAPTCHA_SCRIPT_ID;
-    script.src = PROCAPTCHA_SCRIPT_URL;
+    script.src = env('NEXT_PUBLIC_PROCAPTCHA_SCRIPT_URL') || DEFAULT_PROCAPTCHA_SCRIPT_URL;
     script.type = 'module';
     script.async = true;
 
