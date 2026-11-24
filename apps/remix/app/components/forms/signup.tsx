@@ -8,7 +8,6 @@ import {
 } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { ZNameSchema } from '@documenso/lib/types/name';
-import { env } from '@documenso/lib/utils/env';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { ZPasswordSchema } from '@documenso/trpc/server/auth-router/schema';
 import { cn } from '@documenso/ui/lib/utils';
@@ -23,8 +22,6 @@ import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
-import { Turnstile } from '@marsidev/react-turnstile';
 import type { ReactNode } from 'react';
 import { Fragment, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -33,6 +30,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 
+import { Captcha, type CaptchaInstance, getCaptchaProvider } from '~/components/general/captcha';
 import { UserProfileTimur } from '~/components/general/user-profile-timur';
 
 export const ZSignUpFormSchema = z
@@ -90,8 +88,8 @@ export const SignUpForm = ({
 
   const utmSrc = searchParams.get('utm_source') ?? null;
 
-  const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
-  const turnstileRef = useRef<TurnstileInstance>(null);
+  const isCaptchaEnabled = getCaptchaProvider() !== null;
+  const captchaRef = useRef<CaptchaInstance>(null);
 
   const hasSocialAuthEnabled = isGoogleSignupEnabled || isMicrosoftSignupEnabled || isOidcSignupEnabled;
 
@@ -120,8 +118,8 @@ export const SignUpForm = ({
     try {
       let token: string | undefined;
 
-      if (turnstileSiteKey) {
-        token = await turnstileRef.current?.getResponsePromise(3000).catch((_err) => undefined);
+      if (isCaptchaEnabled) {
+        token = await captchaRef.current?.getResponsePromise(3000).catch((_err) => undefined);
 
         if (!token) {
           toast({
@@ -168,7 +166,7 @@ export const SignUpForm = ({
         variant: 'destructive',
       });
 
-      turnstileRef.current?.reset();
+      captchaRef.current?.reset();
     }
   };
 
@@ -340,16 +338,7 @@ export const SignUpForm = ({
                 </>
               )}
 
-              {turnstileSiteKey && (
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={turnstileSiteKey}
-                  options={{
-                    size: 'flexible',
-                    appearance: 'always',
-                  }}
-                />
-              )}
+              {isCaptchaEnabled && <Captcha ref={captchaRef} />}
 
               {hasSocialAuthEnabled && (
                 <div className="relative flex items-center justify-center gap-x-4 py-2 text-xs uppercase">

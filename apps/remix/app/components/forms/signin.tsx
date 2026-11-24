@@ -2,7 +2,6 @@ import { authClient } from '@documenso/auth/client';
 import { AuthenticationErrorCode } from '@documenso/auth/server/lib/errors/error-codes';
 import { formatPath } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
-import { env } from '@documenso/lib/utils/env';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { trpc } from '@documenso/trpc/react';
 import { ZCurrentPasswordSchema } from '@documenso/trpc/server/auth-router/schema';
@@ -19,8 +18,6 @@ import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { KeyRoundIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -30,6 +27,8 @@ import { FcGoogle } from 'react-icons/fc';
 import { Link, useNavigate } from 'react-router';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import { Captcha, type CaptchaInstance, getCaptchaProvider } from '~/components/general/captcha';
 
 const CommonErrorMessages: Record<string, MessageDescriptor> = {
   [AuthenticationErrorCode.AccountDisabled]: msg`This account has been disabled. Please contact support.`,
@@ -95,9 +94,9 @@ export const SignInForm = ({
 
   const hasSocialAuthEnabled = isGoogleSSOEnabled || isMicrosoftSSOEnabled || isOIDCSSOEnabled;
 
-  const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
-  const turnstileRef = useRef<TurnstileInstance>(null);
-  const twoFactorTurnstileRef = useRef<TurnstileInstance>(null);
+  const isCaptchaEnabled = getCaptchaProvider() !== null;
+  const captchaRef = useRef<CaptchaInstance>(null);
+  const twoFactorCaptchaRef = useRef<CaptchaInstance>(null);
 
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
 
@@ -205,13 +204,13 @@ export const SignInForm = ({
   };
 
   const onFormSubmit = async ({ email, password, totpCode, backupCode }: TSignInFormSchema) => {
-    const $turnstile = isTwoFactorAuthenticationDialogOpen ? twoFactorTurnstileRef.current : turnstileRef.current;
+    const $captcha = isTwoFactorAuthenticationDialogOpen ? twoFactorCaptchaRef.current : captchaRef.current;
 
     try {
       let token: string | undefined;
 
-      if (turnstileSiteKey) {
-        token = await $turnstile?.getResponsePromise(3000).catch((_err) => undefined);
+      if (isCaptchaEnabled) {
+        token = await $captcha?.getResponsePromise(3000).catch((_err) => undefined);
 
         if (!token) {
           toast({
@@ -275,7 +274,7 @@ export const SignInForm = ({
         variant: 'destructive',
       });
 
-      $turnstile?.reset();
+      $captcha?.reset();
     }
   };
 
@@ -386,16 +385,7 @@ export const SignInForm = ({
                 )}
               />
 
-              {turnstileSiteKey && !isTwoFactorAuthenticationDialogOpen && (
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={turnstileSiteKey}
-                  options={{
-                    size: 'flexible',
-                    appearance: 'always',
-                  }}
-                />
-              )}
+              {isCaptchaEnabled && !isTwoFactorAuthenticationDialogOpen && <Captcha ref={captchaRef} />}
 
               <Button
                 type="submit"
@@ -527,16 +517,9 @@ export const SignInForm = ({
                 />
               )}
 
-              {turnstileSiteKey && (
+              {isCaptchaEnabled && (
                 <div className="mt-4">
-                  <Turnstile
-                    ref={twoFactorTurnstileRef}
-                    siteKey={turnstileSiteKey}
-                    options={{
-                      size: 'flexible',
-                      appearance: 'always',
-                    }}
-                  />
+                  <Captcha ref={twoFactorCaptchaRef} />
                 </div>
               )}
 

@@ -150,6 +150,12 @@ declare namespace NodeJS {
     NEXT_PUBLIC_IMPRINT_URL?: string;
 
     /**
+     * Prosopo Procaptcha environment variables
+     */
+    NEXT_PUBLIC_PROCAPTCHA_SITE_KEY?: string;
+    NEXT_PRIVATE_PROCAPTCHA_SECRET_KEY?: string;
+
+    /**
      * Google Vertex AI environment variables
      */
     GOOGLE_VERTEX_PROJECT_ID?: string;

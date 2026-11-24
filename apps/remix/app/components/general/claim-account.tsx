@@ -2,7 +2,6 @@ import { authClient } from '@documenso/auth/client';
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { AppError } from '@documenso/lib/errors/app-error';
 import { ZNameSchema } from '@documenso/lib/types/name';
-import { env } from '@documenso/lib/utils/env';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { ZPasswordSchema } from '@documenso/trpc/server/auth-router/schema';
 import { Button } from '@documenso/ui/primitives/button';
@@ -14,13 +13,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
 import { SIGNUP_ERROR_MESSAGES } from '~/components/forms/signup';
+import { Captcha, type CaptchaInstance, getCaptchaProvider } from '~/components/general/captcha';
 
 export type ClaimAccountProps = {
   defaultName: string;
@@ -54,8 +52,8 @@ export const ClaimAccount = ({ defaultName, defaultEmail }: ClaimAccountProps) =
   const analytics = useAnalytics();
   const navigate = useNavigate();
 
-  const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
-  const turnstileRef = useRef<TurnstileInstance>(null);
+  const isCaptchaEnabled = getCaptchaProvider() !== null;
+  const captchaRef = useRef<CaptchaInstance>(null);
 
   const form = useForm<TClaimAccountFormSchema>({
     values: {
@@ -70,8 +68,8 @@ export const ClaimAccount = ({ defaultName, defaultEmail }: ClaimAccountProps) =
     try {
       let token: string | undefined;
 
-      if (turnstileSiteKey) {
-        token = await turnstileRef.current?.getResponsePromise(3000).catch((_err) => undefined);
+      if (isCaptchaEnabled) {
+        token = await captchaRef.current?.getResponsePromise(3000).catch((_err) => undefined);
 
         if (!token) {
           toast({
@@ -116,7 +114,7 @@ export const ClaimAccount = ({ defaultName, defaultEmail }: ClaimAccountProps) =
         variant: 'destructive',
       });
 
-      turnstileRef.current?.reset();
+      captchaRef.current?.reset();
     }
   };
 
@@ -171,16 +169,9 @@ export const ClaimAccount = ({ defaultName, defaultEmail }: ClaimAccountProps) =
               )}
             />
 
-            {turnstileSiteKey && (
+            {isCaptchaEnabled && (
               <div className="mt-4">
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={turnstileSiteKey}
-                  options={{
-                    size: 'flexible',
-                    appearance: 'always',
-                  }}
-                />
+                <Captcha ref={captchaRef} />
               </div>
             )}
 
